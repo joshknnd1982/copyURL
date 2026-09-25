@@ -23,9 +23,18 @@
 </ul>
 <p>The default shortcuts are <b>Alt+Control+Windows+C</b> for Copy page URL and <b>Alt+Control+Windows+L</b> for Copy link URL. In Input Gestures, a user can replace either default, add another shortcut, or remove a shortcut. NVDA saves those personal assignments in its standard gesture map, so they continue to work after a restart.</p>
 <p>All options are independent of each other. Uncheck a "Say ..." checkbox if you'd rather NVDA just speak that command's copied URL on its own, without a prefix.</p>
+<p><b>Check for Copy URL updates automatically</b> and <b>Check for updates now</b> - see Updates below.</p>
+<h2>Updates</h2>
+<p>Copy URL checks for updates. Once a day, a little after NVDA starts, the add-on asks its GitHub repository, <a href="https://github.com/joshknnd1982/copyURL">github.com/joshknnd1982/copyURL</a>, whether a newer version has been released, and says nothing unless there is one. When there is, a dialog shows what's new in a box you can read line by line, and offers to download and install it. The download must match the release's SHA-256 checksum. Then NVDA asks you to confirm the installation and offers to restart. Your settings are kept.</p>
+<p>To check yourself, open the NVDA menu, choose <strong>Tools</strong>, then <strong>Check for add-on updates</strong>, and choose <strong>Copy URL...</strong>. Or press <strong>Check for updates now</strong> in the add-on's settings: NVDA menu, Preferences, Settings, <strong>Copy URL</strong>. You can also assign a gesture to <strong>Checks for Copy URL updates</strong> in NVDA's Input Gestures dialog, under <strong>Copy URL</strong>. To stop the daily check, clear <strong>Check for Copy URL updates automatically</strong> in the same settings panel.</p>
 <h2>UIA Browse Mode Limitation</h2>
 <p>In Microsoft Edge with <b>Use UI Automation to access Microsoft Edge and other Chromium based browsers</b> enabled in NVDA's Advanced settings, the Copy Link URL command may work, but the Copy Page URL command may be unable to obtain the current page's direct URL and say <b>No URL found</b>. For reliable page-URL copying, use the browser's standard browse-mode accessibility implementation rather than UIA browse mode.</p>
 <h2>What's New</h2>
+<h3>Version 1.9.3</h3>
+<ul>
+<li>Checks GitHub for updates once a day and offers to install them. Choose Tools, Check for add-on updates, Copy URL in the NVDA menu, or press Check for updates now in Copy URL's settings, to check yourself.</li>
+<li>Updates come from github.com/joshknnd1982/copyURL.</li>
+</ul>
 <h3>Version 1.9.2</h3>
 <ul>
 <li>Clarified that Copy URL is designed only for web browsers, not browse mode in applications such as Microsoft Word.</li>
@@ -60,9 +69,10 @@
 <li>You can change either shortcut key at any time via NVDA menu &gt; Preferences &gt; Input Gestures &gt; Copy URL.</li>
 </ul>
 <h2>Privacy and Security</h2>
-<p>Copy URL does not connect to the internet, write files, or collect information. It reads a URL exposed by NVDA and places that URL on the clipboard only when the user invokes one of its commands.</p>
+<p>Copy URL collects no information. It reads a URL exposed by NVDA and places that URL on the clipboard only when the user invokes one of its commands.</p>
+<p>Once a day, and whenever you ask it to, Copy URL asks GitHub (api.github.com) for the latest release of github.com/joshknnd1982/copyURL. The request carries only the add-on's name and version. It downloads an update only when you choose <b>Download and install</b>. It keeps its update settings, whether to check automatically and when it last checked, in addonUpdates\copyURL.json in NVDA's user configuration folder. Clear <b>Check for Copy URL updates automatically</b> in its settings to stop the daily check.</p>
 <h2>Source and License</h2>
-<p>Source code: <a href="https://github.com/Dennisl123/copyURL">https://github.com/Dennisl123/copyURL</a></p>
+<p>Source code: <a href="https://github.com/joshknnd1982/copyURL">https://github.com/joshknnd1982/copyURL</a>, a fork of <a href="https://github.com/Dennisl123/copyURL">https://github.com/Dennisl123/copyURL</a></p>
 <p>Copyright &copy; 2026 Dennis Long. Licensed under the <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.html">GNU General Public License version 2 or later</a>.</p>
 </body>
 </html>

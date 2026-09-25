@@ -16,6 +16,7 @@
 #   - Say "URL copied" before speaking the copied page URL.
 #   - Enable/disable the Copy Link URL command itself.
 #   - Say "Link URL copied" before speaking the copied link URL.
+# The same panel turns the daily check for updates (updater.py) on or off.
 
 import globalPluginHandler
 import api
@@ -27,6 +28,8 @@ import controlTypes
 from gui import guiHelper
 from gui.settingsDialogs import SettingsPanel
 import addonHandler
+
+from . import updater
 
 addonHandler.initTranslation()
 
@@ -91,6 +94,8 @@ class CopyURLSettingsPanel(SettingsPanel):
 			config.conf["copyURL"]["announceCopiedPrefixLinkURL"]
 		)
 
+		self.updates = updater.SettingsControls(self, helper)
+
 	def onSave(self):
 		config.conf["copyURL"]["announceCopiedPrefixPageURL"] = (
 			self.announceCopiedPrefixPageURLCheckBox.GetValue()
@@ -101,6 +106,7 @@ class CopyURLSettingsPanel(SettingsPanel):
 		config.conf["copyURL"]["enableLinkURLCopy"] = (
 			self.enableLinkURLCopyCheckBox.GetValue()
 		)
+		self.updates.save()
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -111,8 +117,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		categoryClasses = gui.settingsDialogs.NVDASettingsDialog.categoryClasses
 		if CopyURLSettingsPanel not in categoryClasses:
 			categoryClasses.append(CopyURLSettingsPanel)
+		updater.start()
 
 	def terminate(self):
+		updater.stop()
 		categoryClasses = gui.settingsDialogs.NVDASettingsDialog.categoryClasses
 		if CopyURLSettingsPanel in categoryClasses:
 			categoryClasses.remove(CopyURLSettingsPanel)
@@ -220,6 +228,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	)
 	# Translators: Category shown for this command in NVDA's Input Gestures dialog.
 	script_copySubURLToClipboard.category = _("Copy URL")
+
+	def script_checkForUpdates(self, gesture):
+		updater.checkForUpdates()
+
+	# Translators: Message presented in input help mode.
+	script_checkForUpdates.__doc__ = _("Checks for Copy URL updates")
+	# Translators: Category shown for this command in NVDA's Input Gestures dialog.
+	script_checkForUpdates.category = _("Copy URL")
 
 	# NVDA's Input Gestures dialog uses these defaults and stores any user
 	# replacements in its own gesture map. This keeps custom assignments intact.
