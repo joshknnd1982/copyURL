@@ -11,12 +11,17 @@
 #      Gesture: Alt+Control+Windows+L
 #      This command can be turned off entirely in settings.
 #
+# Both work whether NVDA reads the browser through IAccessible2 or through UI
+# Automation (UIA browse mode, which Edge and other Chromium browsers can use).
+#
 # Settings dialog (NVDA menu > Preferences > Settings > Copy URL) offers three
 # fully independent options:
 #   - Say "URL copied" before speaking the copied page URL.
 #   - Enable/disable the Copy Link URL command itself.
 #   - Say "Link URL copied" before speaking the copied link URL.
 # The same panel turns the daily check for updates (updater.py) on or off.
+
+import re
 
 import globalPluginHandler
 import api
@@ -25,13 +30,42 @@ import config
 import gui
 import wx
 import controlTypes
+import textInfos
+import treeInterceptorHandler
+import winUser
 from gui import guiHelper
 from gui.settingsDialogs import SettingsPanel
 import addonHandler
+from logHandler import log
 
 from . import updater
 
 addonHandler.initTranslation()
+
+try:
+	ROLE_LINK = controlTypes.Role.LINK
+except AttributeError:
+	# NVDA 2021.1 and earlier.
+	ROLE_LINK = controlTypes.ROLE_LINK
+#: A URL starts with its scheme: https:, file:, about:, edge: and so on.
+URL_START = re.compile(r"[a-zA-Z][a-zA-Z0-9+.\-]+:\S")
+#: How many objects up from the cursor to look for the link it is in, as NVDA's own
+#: "report link destination" command does: the cursor is often on text inside the link.
+LINK_SEARCH_DEPTH = 10
+
+
+def isURL(text):
+	return isinstance(text, str) and URL_START.match(text) is not None
+
+
+def tryGet(getter):
+	"""Returns getter(), or None if NVDA can't get it, as happens when the page has just changed."""
+	try:
+		return getter()
+	except Exception:
+		log.debugWarning("Copy URL could not read the browser", exc_info=True)
+		return None
+
 
 confspec = {
 	"announceCopiedPrefixPageURL": "boolean(default=true)",
@@ -130,21 +164,68 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		Find the URL of the document currently being read.
 		Browse-mode documents (Firefox, Chrome, Edge, etc.) expose their URL
-		via the tree interceptor's documentConstantIdentifier.
+		through their tree interceptor.
 		"""
-		url = None
+		for treeInterceptor in self._getTreeInterceptors():
+			url = self._getDocumentURL(treeInterceptor)
+			if url:
+				return url
+		return None
 
-		obj = api.getFocusObject()
-		treeInterceptor = getattr(obj, "treeInterceptor", None)
+	def _getTreeInterceptors(self):
+		"""The browse-mode documents the user is most likely reading, nearest first."""
+		found = []
+		for getTreeInterceptor in (
+			lambda: api.getFocusObject().treeInterceptor,
+			lambda: api.getNavigatorObject().treeInterceptor,
+			lambda: api.getForegroundObject().treeInterceptor,
+			# Focus may be outside the page, in the address bar or on a toolbar.
+			self._getDocumentShownInForeground,
+		):
+			treeInterceptor = tryGet(getTreeInterceptor)
+			if treeInterceptor is not None and treeInterceptor not in found:
+				found.append(treeInterceptor)
+				yield treeInterceptor
 
-		if treeInterceptor is None:
-			foreground = api.getForegroundObject()
-			treeInterceptor = getattr(foreground, "treeInterceptor", None)
+	def _getDocumentURL(self, treeInterceptor):
+		"""
+		The URL of a browse-mode document, or None.
+		Through IAccessible2 the URL is the documentConstantIdentifier. In UIA browse mode that is
+		an automation ID such as "792", not a URL, and the URL is the document's own value, which
+		NVDA 2025.1 and later also give as documentURL.
+		"""
+		for getURL in (
+			lambda: treeInterceptor.documentURL,
+			lambda: treeInterceptor.documentConstantIdentifier,
+			lambda: treeInterceptor.rootNVDAObject.value,
+		):
+			url = tryGet(getURL)
+			if isURL(url):
+				return url
+		return None
 
-		if treeInterceptor is not None:
-			url = getattr(treeInterceptor, "documentConstantIdentifier", None)
-
-		return url
+	def _getDocumentShownInForeground(self):
+		"""
+		The browse-mode document on screen in the foreground window, or None.
+		Chromium browsers give each tab its own document window and hide it while the tab is in the
+		background. Browsers that draw every tab in the main window, as Firefox does, can't be told
+		apart this way, so their documents are left out.
+		"""
+		foregroundHandle = tryGet(lambda: api.getForegroundObject().windowHandle)
+		if not foregroundHandle:
+			return None
+		shown = []
+		for treeInterceptor in list(treeInterceptorHandler.runningTable):
+			handle = tryGet(lambda: treeInterceptor.rootNVDAObject.windowHandle)
+			if (
+				handle
+				and handle != foregroundHandle
+				and winUser.isWindowVisible(handle)
+				and winUser.getAncestor(handle, winUser.GA_ROOT) == foregroundHandle
+			):
+				shown.append(treeInterceptor)
+		# Two at once (Edge's split screen, say) would be a guess.
+		return shown[0] if len(shown) == 1 else None
 
 	def _getLinkURLFromObject(self, obj):
 		"""
@@ -168,21 +249,37 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def _getSubURL(self):
 		"""
-		Find the URL of the link at (or containing) the current navigator object,
-		i.e. wherever the browse-mode cursor currently is - without clicking it.
+		Find the URL of the link at (or containing) the navigator object, the browse-mode
+		cursor or the focus - without clicking it.
+		The navigator object comes first, so a link reached with object navigation is copied.
+		It follows the browse-mode cursor only while NVDA's review cursor follows the caret,
+		so the cursor is asked next, then the focus, which is the link in focus mode.
 		"""
-		obj = api.getNavigatorObject()
-		current = obj
-		# Walk a few levels up in case the cursor is on text inside the link
-		# rather than on the link object itself.
-		for _unused in range(4):
-			if current is None:
-				break
-			if current.role == controlTypes.Role.LINK:
-				url = self._getLinkURLFromObject(current)
+		for getObject in (api.getNavigatorObject, self._getObjectAtCaret, api.getFocusObject):
+			url = self._getLinkURLAround(tryGet(getObject))
+			if url:
+				return url
+		return None
+
+	def _getObjectAtCaret(self):
+		"""The object at the browse-mode cursor, or None in focus mode."""
+		treeInterceptor = api.getFocusObject().treeInterceptor
+		if treeInterceptor is None or treeInterceptor.passThrough:
+			return None
+		info = treeInterceptor.makeTextInfo(textInfos.POSITION_CARET)
+		info.expand(textInfos.UNIT_CHARACTER)
+		return info.NVDAObjectAtStart
+
+	def _getLinkURLAround(self, obj):
+		"""The URL of the link obj is, or is inside: the cursor is often on the link's text, or on bold text in it."""
+		for _unused in range(LINK_SEARCH_DEPTH):
+			if obj is None:
+				return None
+			if tryGet(lambda: obj.role) == ROLE_LINK:
+				url = tryGet(lambda: self._getLinkURLFromObject(obj))
 				if url:
 					return url
-			current = current.parent
+			obj = tryGet(lambda: obj.parent)
 		return None
 
 	def _announce(self, url, prefix, announcePrefixConfigKey):

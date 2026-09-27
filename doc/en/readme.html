@@ -11,7 +11,7 @@
 <tr><td>Alt+Control+Windows+L</td><td>Copy the URL of the link at the current browse mode cursor (or navigator object) position - without clicking it.</td></tr>
 </table>
 <h2>Usage</h2>
-<p><b>Copy page URL:</b> Press <b>Alt+Control+Windows+C</b> while focused in a browse-mode document (e.g. a web page in Firefox, Chrome, or Edge). NVDA will copy the page's URL to the clipboard and speak/braille it.</p>
+<p><b>Copy page URL:</b> Press <b>Alt+Control+Windows+C</b> while focused in a browse-mode document (e.g. a web page in Firefox, Chrome, or Edge). NVDA will copy the page's URL to the clipboard and speak/braille it. In Chrome, Edge and other Chromium browsers this also works from the address bar or toolbar.</p>
 <p><b>Copy link URL:</b> Move your browse-mode cursor (or NVDA's navigator object, via Object Navigation) onto a link, then press <b>Alt+Control+Windows+L</b>. NVDA will copy that link's destination URL to the clipboard and speak/braille it, without activating the link.</p>
 <h2>Settings</h2>
 <p>Open <b>NVDA menu &gt; Preferences &gt; Settings &gt; Copy URL</b> to find:</p>
@@ -27,9 +27,17 @@
 <h2>Updates</h2>
 <p>Copy URL checks for updates. Once a day, a little after NVDA starts, the add-on asks its GitHub repository, <a href="https://github.com/joshknnd1982/copyURL">github.com/joshknnd1982/copyURL</a>, whether a newer version has been released, and says nothing unless there is one. When there is, a dialog shows what's new in a box you can read line by line, and offers to download and install it. The download must match the release's SHA-256 checksum. Then NVDA asks you to confirm the installation and offers to restart. Your settings are kept.</p>
 <p>To check yourself, open the NVDA menu, choose <strong>Tools</strong>, then <strong>Check for add-on updates</strong>, and choose <strong>Copy URL...</strong>. Or press <strong>Check for updates now</strong> in the add-on's settings: NVDA menu, Preferences, Settings, <strong>Copy URL</strong>. You can also assign a gesture to <strong>Checks for Copy URL updates</strong> in NVDA's Input Gestures dialog, under <strong>Copy URL</strong>. To stop the daily check, clear <strong>Check for Copy URL updates automatically</strong> in the same settings panel.</p>
-<h2>UIA Browse Mode Limitation</h2>
-<p>In Microsoft Edge with <b>Use UI Automation to access Microsoft Edge and other Chromium based browsers</b> enabled in NVDA's Advanced settings, the Copy Link URL command may work, but the Copy Page URL command may be unable to obtain the current page's direct URL and say <b>No URL found</b>. For reliable page-URL copying, use the browser's standard browse-mode accessibility implementation rather than UIA browse mode.</p>
+<h2>UIA Browse Mode</h2>
+<p>Both commands work in UIA browse mode, when NVDA reads Microsoft Edge or another Chromium browser through UI Automation. That happens when <b>Use UIA with Microsoft Edge and other Chromium based browsers when available</b> is set to <b>Yes</b> in NVDA's Advanced settings, and NVDA can also choose UI Automation itself under the default setting. Copy Page URL copies the page's own address, which in UIA browse mode is the document's value rather than the identifier NVDA uses to remember your place.</p>
+<p>In Chromium browsers, Copy Page URL also works when focus is in the address bar or on the toolbar: it copies the address of the page in the tab on screen.</p>
+<p>Copy Link URL finds the link at the navigator object first, so a link you reached with object navigation is copied. If there is none there, it looks at the browse-mode cursor, which matters when <b>Follow caret</b> is off in NVDA's Review Cursor settings, and then at the focus, which is the link itself in focus mode. The cursor can be on the link's text, or on bold or other formatted text up to ten levels inside the link.</p>
 <h2>What's New</h2>
+<h3>Version 1.9.4</h3>
+<ul>
+<li>Works in UIA browse mode. When NVDA reads Edge or another Chromium browser through UI Automation, Copy Page URL copies the page's address. Before, it said "No URL found" or copied a number such as 792.</li>
+<li>In Chromium browsers, Copy Page URL also works when focus is in the address bar or on the toolbar.</li>
+<li>Copy Link URL finds the link at the browse-mode cursor even when the navigator object has not followed it, finds the focused link in focus mode, and finds links whose text is formatted several levels deep.</li>
+</ul>
 <h3>Version 1.9.3</h3>
 <ul>
 <li>Checks GitHub for updates once a day and offers to install them. Choose Tools, Check for add-on updates, Copy URL in the NVDA menu, or press Check for updates now in Copy URL's settings, to check yourself.</li>
@@ -62,8 +70,8 @@
 </ul>
 <h2>Notes</h2>
 <ul>
-<li>The "copy page URL" command works in any application that exposes a document identifier through NVDA's browse mode (most web browsers).</li>
-<li>The "copy link URL" command works on links exposed via IAccessible2 (most links in Firefox, Chrome, and Edge). If NVDA can't determine a link's destination, it will say "No link found".</li>
+<li>The "copy page URL" command works in web browsers whose pages NVDA reads in browse mode, through IAccessible2 or UI Automation (Firefox, Chrome, Edge and other Chromium browsers).</li>
+<li>The "copy link URL" command works on links in Firefox, Chrome, and Edge, through IAccessible2 or UI Automation. If NVDA can't determine a link's destination, it will say "No link found".</li>
 <li>If the Copy Link URL command is turned off in settings, pressing its shortcut says "Copy Link URL is disabled in Copy URL settings" instead of copying anything.</li>
 <li>If no page URL can be found, NVDA will say "No URL found".</li>
 <li>You can change either shortcut key at any time via NVDA menu &gt; Preferences &gt; Input Gestures &gt; Copy URL.</li>
