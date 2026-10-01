@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copy URL - NVDA Global Plugin
 # Copyright (C) 2026 Dennis Long
-# Licensed under the GNU General Public License version 2 or later.
+# Licensed under the MIT License.
 #
 # Two commands:
 #   1. Copy the URL of the current document/page.

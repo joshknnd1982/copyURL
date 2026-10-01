@@ -54,7 +54,7 @@ Source: https://github.com/joshknnd1982/copyURL, a fork of https://github.com/De
 
 To test, run `python -m unittest discover -s tests`. To build the add-on, run `python build.py`. It writes `dist/copyURL-<version>.nvda-addon` and a `.sha256` file beside it; upload both to the GitHub release, tagged `v<version>`. `globalPlugins/copyURL/updater.py` is the update check, shared by all of joshknnd1982's add-ons; keep it identical to theirs.
 
-Copyright (C) 2026 Dennis Long. Licensed under the [GNU General Public License version 2 or later](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html).
+Copyright (C) 2026 Dennis Long and Josh Kennedy. Licensed under the [MIT License](LICENSE.md).
 
 ## Changes in 1.9.4
 
